@@ -1,5 +1,6 @@
 package com.love.strutly.service;
 
+import com.love.strutly.utils.DataResult;
 import com.love.strutly.vo.req.PageVO;
 import com.love.strutly.vo.req.RecordAddReqVO;
 import com.love.strutly.vo.resp.record.RecordDetailRespVO;
@@ -22,7 +23,7 @@ public interface RecordService {
 
     List<RecordListRespVO> myList(PageVO vo);
 
-    void open(Integer id);
+    DataResult open(Integer id,Integer uid);
 
-    void delete(Integer id);
+    DataResult delete(Integer id, Integer uid);
 }

@@ -1,19 +1,21 @@
 package com.love.strutly.controller;
 
+import cn.binarywang.wx.miniapp.bean.WxMaUserInfo;
 import com.love.strutly.config.jwt.JwtUtil;
 import com.love.strutly.entity.MiniUser;
 import com.love.strutly.service.FansService;
 import com.love.strutly.service.MiniUserService;
 import com.love.strutly.utils.DataResult;
 import com.love.strutly.utils.HttpContextUtils;
+import com.love.strutly.utils.RedisUtil;
 import com.love.strutly.vo.resp.user.MiniUserRespVO;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.validation.Valid;
 
 /**
  * @Author lj
@@ -35,6 +37,9 @@ public class MiniUserController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Resource
+    private RedisUtil redisUtil;
+
     @GetMapping("/user/{id}")
     public DataResult<MiniUserRespVO> my_list(@PathVariable("id")Integer id){
         MiniUserRespVO miniUserRespVO = new MiniUserRespVO();
@@ -49,6 +54,15 @@ public class MiniUserController {
         }
         miniUserRespVO.setMiniUser(miniUser);
         return DataResult.success(miniUserRespVO);
+    }
+
+    @PostMapping("user")
+    public DataResult sync(@RequestBody @Valid WxMaUserInfo userInfo){
+        String token = HttpContextUtils.getToken();
+        String openid = jwtUtil.getClaim(token,"openid");
+        userInfo.setOpenId(openid);
+        miniUserService.save(userInfo);
+        return DataResult.success();
     }
 
 }

@@ -1,7 +1,10 @@
 package com.love.strutly.entity;
 
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
@@ -14,7 +17,8 @@ import java.util.List;
  * @Date 2020/11/8 17:51
  * @Version 1.0
  */
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "love_record")
 @TypeDef(name = "json", typeClass = JsonStringType.class)

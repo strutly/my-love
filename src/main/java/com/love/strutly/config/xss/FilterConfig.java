@@ -27,12 +27,13 @@ public class FilterConfig {
 
     @Bean
     public FilterRegistrationBean xssFilterRegistration(){
+        System.out.println("xss filter come");
         FilterRegistrationBean registrationBean = new FilterRegistrationBean();
         registrationBean.setDispatcherTypes(DispatcherType.REQUEST);
         registrationBean.setFilter(new XssFilter());
         registrationBean.addUrlPatterns(StringUtils.split(urlPatterns,","));
         registrationBean.setName("XssFilter");
-        registrationBean.setOrder(100);
+        registrationBean.setOrder(10);
         Map<String,String> initParameters = new HashMap<>();
         initParameters.put("excludes",excludes);
         initParameters.put("enabled",enabled);

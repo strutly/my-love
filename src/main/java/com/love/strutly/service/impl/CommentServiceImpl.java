@@ -1,14 +1,20 @@
 package com.love.strutly.service.impl;
 
+import com.love.strutly.aop.annotation.CommentAnnotation;
 import com.love.strutly.entity.Comment;
+import com.love.strutly.filter.SensitiveFilter;
 import com.love.strutly.repository.CommentRepository;
 import com.love.strutly.service.CommentService;
 import com.love.strutly.utils.BeanMapper;
+import com.love.strutly.utils.DataResult;
 import com.love.strutly.vo.req.CommentAddReqVO;
+import com.love.strutly.vo.req.PageVO;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @Author lj
@@ -21,7 +27,11 @@ public class CommentServiceImpl implements CommentService{
     @Autowired
     private CommentRepository commentRepository;
 
+    @Autowired
+    private SensitiveFilter sensitiveFilter;
+
     @Override
+    @CommentAnnotation
     public void save(CommentAddReqVO vo) {
         Comment comment = null;
         if(vo.getType().equals(1)){
@@ -32,6 +42,9 @@ public class CommentServiceImpl implements CommentService{
             }
         }
         comment = new Comment();
+        if(StringUtils.isNotBlank(vo.getContent())){
+            vo.setContent(sensitiveFilter.filter(vo.getContent()));
+        }
         BeanMapper.mapExcludeNull(vo,comment);
         commentRepository.save(comment);
     }
@@ -44,5 +57,21 @@ public class CommentServiceImpl implements CommentService{
     @Override
     public List<Comment> findByUidAndType(Integer uid,Integer type) {
         return commentRepository.findByUidAndTypeOrderByIdDesc(uid,type);
+    }
+
+    @Override
+    public List<Comment> page(PageVO vo) {
+        List<Comment> comments = findByUidAndType(vo.getUid(),2);
+        return comments.stream().skip((vo.getPageNo())* vo.getPageSize()).limit(vo.getPageSize()).collect(Collectors.toList());
+    }
+
+    @Override
+    public DataResult delete(Integer id, Integer uid) {
+        Comment comment = commentRepository.getOne(id);
+        if(comment!=null && comment.getUid().equals(uid)){
+            commentRepository.delete(comment);
+            return DataResult.success();
+        }
+        return DataResult.fail("您没有权限进行此操作!");
     }
 }

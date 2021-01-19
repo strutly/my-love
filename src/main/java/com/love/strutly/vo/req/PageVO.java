@@ -12,5 +12,5 @@ public class PageVO {
     private Integer pageNo = 0;
     private Integer pageSize = 6;
     private Integer uid;
-    private Boolean mine=false;
+    private Boolean open=false;
 }

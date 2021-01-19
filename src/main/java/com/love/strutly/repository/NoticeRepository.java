@@ -13,14 +13,13 @@ import java.util.List;
 @Repository
 public interface NoticeRepository extends JpaRepository<Notice, Integer>, JpaSpecificationExecutor<Notice> {
 
-    /**
-     * 根据 说说id 获取评论信息
-     * @param rid
-     * @return
-     */
-    List<Notice> findByRid(Integer rid);
+    List<Notice> findByOid(@Param(value = "oid")Integer oid);
+
+    Integer countByOid(@Param(value = "oid")Integer oid);
 
     @Modifying
     @Query("delete from Notice a where a.id in (?1)")
     void deleteBatch(@Param(value = "ids") List<Integer> ids);
+
+    void deleteByOid(@Param(value = "oid")Integer oid);
 }

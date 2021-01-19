@@ -28,5 +28,5 @@ public class Comment extends BaseEntity{
     private String content;//回复内容
 
 
-    private Integer type;//1评论 2点赞,3分享
+    private Integer type;//1点赞 2评论,3分享
 }

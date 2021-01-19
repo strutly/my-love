@@ -1,8 +1,11 @@
 package com.love.strutly.utils;
 
 import com.alibaba.fastjson.JSON;
+import com.love.strutly.filter.SensitiveFilter;
 import org.apache.commons.text.StringEscapeUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
+import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.boot.configurationprocessor.json.JSONTokener;
 
@@ -20,6 +23,9 @@ import java.util.Map;
  *
  */
 public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
+
+    @Autowired
+    private SensitiveFilter sensitiveFilter;
 
     public XssHttpServletRequestWrapper(HttpServletRequest request) {
         super(request);
@@ -53,16 +59,23 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
     public ServletInputStream getInputStream() throws IOException {
         String str=getRequestBody(super.getInputStream());
 
-        Object json = new JSONTokener(str);
+        Object json = null;
+        try {
+            json = new JSONTokener(str).nextValue();
+        } catch (JSONException e) {
+            e.printStackTrace();
 
+        }
         if (json instanceof JSONArray) {
             str = json.toString();
         } else if (json instanceof JSONObject) {
+
             Map<String,Object> map= JSON.parseObject(str,Map.class);
             Map<String,Object> resultMap = new HashMap<>(map.size());
             map.forEach((k,v)->{
                 if(v instanceof String){
-                    resultMap.put(k,StringEscapeUtils.escapeHtml4(v.toString()));
+                    String val = StringEscapeUtils.escapeHtml4(v.toString());
+                    resultMap.put(k,val);
                 }else{
                     resultMap.put(k,v);
                 }
@@ -90,6 +103,7 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
         };
     }
     private String getRequestBody(InputStream stream) {
+        System.out.println("提交进来了~~");
         String line = "";
         StringBuilder body = new StringBuilder();
         int counter = 0;

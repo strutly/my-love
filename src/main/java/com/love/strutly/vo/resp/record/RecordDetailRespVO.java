@@ -19,6 +19,8 @@ public class RecordDetailRespVO {
 
     private String msg;//内容
 
+    private Boolean open;
+
     private List<String> imgs;
 
     private Date createTime;

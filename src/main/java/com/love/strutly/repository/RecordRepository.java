@@ -18,7 +18,10 @@ public interface RecordRepository extends JpaRepository<Record, Integer>, JpaSpe
      * @param uid
      * @return
      */
-    List<Record> findByMiniUser_IdOrderByCreateTimeDesc(Integer uid);
+    List<Record> findByMiniUser_IdOrderByCreateTimeDesc(@Param(value = "uid")Integer uid);
+
+
+    List<Record> findByMiniUser_IdAndOpenOrderByCreateTimeDesc(@Param(value = "uid")Integer uid,@Param(value = "open")Boolean open);
 
 
     /**

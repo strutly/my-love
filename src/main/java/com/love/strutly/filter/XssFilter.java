@@ -61,7 +61,6 @@ public class XssFilter implements Filter {
         if (excludes == null || excludes.isEmpty()) {
             return false;
         }
-        log.info("3121");
         String url = urlPath;
         for (String pattern : excludes) {
             Pattern p = Pattern.compile("^" + pattern);

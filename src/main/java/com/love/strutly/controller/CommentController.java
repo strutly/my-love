@@ -48,10 +48,8 @@ public class CommentController {
         return DataResult.success(commentService.page(vo));
     }
 
-
     @PostMapping("comment")
     public DataResult form(@RequestBody @Valid CommentAddReqVO vo){
-        System.out.println(vo.toString());
         String token = HttpContextUtils.getToken();
         MiniUser miniUser = miniUserService.findByOpenId(jwtUtil.getClaim(token,"openid"));
         vo.setUid(miniUser.getId());
@@ -61,10 +59,7 @@ public class CommentController {
         WxMaSecCheckService wxMaSecCheckService = wxService.getSecCheckService();
         if(StringUtils.isNotBlank(vo.getContent())){
             try {
-                if(wxMaSecCheckService.checkMessage(vo.getContent())){
-                    commentService.save(vo);
-                    return DataResult.success();
-                }else{
+                if(!wxMaSecCheckService.checkMessage(vo.getContent())){
                     return DataResult.fail("您发布的内容含有违法违规内容");
                 }
             } catch (WxErrorException e) {
@@ -72,16 +67,13 @@ public class CommentController {
                 return DataResult.fail("您发布的内容含有违法违规内容");
             }
         }
-        commentService.save(vo);
-        return DataResult.success();
+        return DataResult.success(commentService.save(vo));
     }
 
     @GetMapping("comment/{id}")
     public DataResult like(@PathVariable("id")Integer id){
         String token = HttpContextUtils.getToken();
         MiniUser miniUser = miniUserService.findByOpenId(jwtUtil.getClaim(token,"openid"));
-        System.out.println(id);
-        System.out.println(miniUser.getId());
         return DataResult.success(commentService.like(id,miniUser.getId()));
     }
 

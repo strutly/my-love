@@ -1,6 +1,7 @@
 package com.love.strutly.vo.req;
 
 import com.love.strutly.entity.MiniUser;
+import com.love.strutly.entity.Record;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -28,7 +29,7 @@ public class RecordAddReqVO {
     @ApiModelProperty(value = "图片集合",name="imgs")
     @NotNull(message = "请至少上传一张照片")
     @Size(min = 1, message = "请至少上传一张照片")
-    private List<String> imgs;
+    private List<Record.MediaVO> imgs;
 
     @ApiModelProperty(value = "是否公开",name="open")
     private Boolean open;

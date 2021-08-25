@@ -4,6 +4,7 @@ import com.love.strutly.exception.BusinessException;
 import com.love.strutly.exception.code.BaseExceptionType;
 import com.love.strutly.utils.DataResult;
 import lombok.extern.slf4j.Slf4j;
+import me.chanjar.weixin.common.error.WxErrorException;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,6 +20,11 @@ public class RestExceptionHandler {
     @ExceptionHandler(value = BusinessException.class)
     <T> DataResult<T> businessExceptionHandler(BusinessException e) {
         return new DataResult<>(e.getCode(),e.getMsg());
+    }
+
+    @ExceptionHandler(value = WxErrorException.class)
+    <T> DataResult<T> WxErorHandler(WxErrorException e){
+        return DataResult.fail(e.getError().getErrorMsg());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

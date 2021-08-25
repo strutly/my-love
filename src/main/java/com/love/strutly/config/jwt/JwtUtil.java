@@ -9,6 +9,7 @@ import com.love.strutly.entity.MiniUser;
 import com.love.strutly.exception.BusinessException;
 import com.love.strutly.exception.code.BaseExceptionType;
 import com.love.strutly.utils.RedisUtil;
+import com.love.strutly.vo.resp.user.TokenRespVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,32 +30,31 @@ public class JwtUtil {
     private RedisUtil redisUtil;
 
 
-    public String getToken(MiniUser miniUser) {
+    public TokenRespVO getToken(MiniUser maUser) {
+        log.info("身份信息token");
+        Algorithm algorithm = Algorithm.HMAC256(jwtProperties.getSecretKey());
 
-        if(redisUtil.hasKey("user-token-"+miniUser.getOpenId())){
-            return (String) redisUtil.get("user-token-"+miniUser.getOpenId());
-        }else{
-            log.info("公众号或小程序--没有缓存!");
-            Algorithm algorithm = Algorithm.HMAC256(jwtProperties.secretKey);
-            Date exp = new Date(System.currentTimeMillis() + jwtProperties.getTokenExpireTime()*60*1000l);
-            // 头部信息
-            Map<String, Object> header = new HashMap<String, Object>();
-            header.put("alg", "HS256");
-            header.put("typ", "JWT");
-            String token = JWT.create()
-                    .withHeader(header)//设置头部信息 Header
-                    .withClaim("openid",miniUser.getOpenId())
-                    .withClaim("id",miniUser.getId().toString())
-                    .withExpiresAt(exp)//设置 载荷 签名过期的时间
-                    .sign(algorithm);//签名 Signature
-            Boolean flag = redisUtil.set("user-token-"+miniUser.getOpenId(),token,60);
-            System.out.println(flag);
-            return token;
-        }
+        Long now = System.currentTimeMillis();
+        Date exp = new Date(now + jwtProperties.getExpireTime());
+        // 头部信息
+        Map<String, Object> header = new HashMap<String, Object>();
+        header.put("alg", "HS256");
+        header.put("typ", "JWT");
+        String token = JWT.create()
+                .withHeader(header)// 设置头部信息 Header
+                .withClaim("openid",maUser.getOpenId())
+                .withExpiresAt(exp)
+                .sign(algorithm);//签名 Signature
+        String reToken = JWT.create()
+                .withHeader(header)// 设置头部信息 Header
+                .withClaim("openid",maUser.getOpenId())
+                .withExpiresAt(new Date(now + jwtProperties.getRefreshExpireTime()))//设置 载荷 签名过期的时间
+                .sign(algorithm);//签名 Signature
+        return new TokenRespVO(maUser.getId(),token,now + jwtProperties.getExpireTime(),reToken,now+jwtProperties.getRefreshExpireTime());
     }
 
     public boolean verify(String token){
-        Algorithm algorithm = Algorithm.HMAC256(jwtProperties.secretKey);
+        Algorithm algorithm = Algorithm.HMAC256(jwtProperties.getSecretKey());
         try {
             JWTVerifier verifier = JWT.require(algorithm).build();
             verifier.verify(token);
@@ -67,14 +67,16 @@ public class JwtUtil {
     }
 
     public String getClaim(String token, String claim) {
-        Algorithm algorithm = Algorithm.HMAC256(jwtProperties.secretKey);
+        Algorithm algorithm = Algorithm.HMAC256(jwtProperties.getSecretKey());
         try{
             JWTVerifier verifier = JWT.require(algorithm).build();
             DecodedJWT jwt = verifier.verify(token);
             return jwt.getClaims().get(claim).asString();
         }catch (IllegalArgumentException e) {
+            log.error(e.toString());
             throw new BusinessException(BaseExceptionType.TOKEN_ERROR,"token认证失败1");
         }catch (JWTVerificationException e) {
+            log.error(e.toString());
             throw new BusinessException(BaseExceptionType.TOKEN_ERROR,"token认证失败2");
         }catch (Exception e){
             log.error(e.toString());

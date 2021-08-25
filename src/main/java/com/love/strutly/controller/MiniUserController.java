@@ -7,14 +7,12 @@ import com.love.strutly.service.FansService;
 import com.love.strutly.service.MiniUserService;
 import com.love.strutly.utils.DataResult;
 import com.love.strutly.utils.HttpContextUtils;
-import com.love.strutly.utils.RedisUtil;
 import com.love.strutly.vo.resp.user.MiniUserRespVO;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import javax.validation.Valid;
 
 /**
@@ -37,11 +35,8 @@ public class MiniUserController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @Resource
-    private RedisUtil redisUtil;
-
-    @GetMapping("/user/{id}")
-    public DataResult<MiniUserRespVO> my_list(@PathVariable("id")Integer id){
+    @GetMapping("/user")
+    public DataResult<MiniUserRespVO> my_list(Integer id){
         MiniUserRespVO miniUserRespVO = new MiniUserRespVO();
         String token = HttpContextUtils.getToken();
         MiniUser miniUser = miniUserService.findByOpenId(jwtUtil.getClaim(token,"openid"));

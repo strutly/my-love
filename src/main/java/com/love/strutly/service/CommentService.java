@@ -8,7 +8,7 @@ import com.love.strutly.vo.req.PageVO;
 import java.util.List;
 
 public interface CommentService {
-    void save(CommentAddReqVO vo);
+    Integer save(CommentAddReqVO vo);
     Boolean like(Integer rid,Integer uid);
 
     List<Comment> findByUidAndType(Integer uid,Integer type);

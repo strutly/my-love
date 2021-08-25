@@ -1,5 +1,6 @@
 package com.love.strutly.vo.resp.user;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 /**
@@ -9,6 +10,27 @@ import lombok.Data;
  */
 @Data
 public class TokenRespVO {
-    private String token;
+    @ApiModelProperty("uid")
     private Integer id;
+
+    @ApiModelProperty("token")
+    private String token;
+
+    @ApiModelProperty("token过期时间")
+    private Long expireTime;
+
+    @ApiModelProperty("refreshToken,可用来刷新token")
+    private String refreshToken;
+
+    @ApiModelProperty("refreshToken过期时间")
+    private Long refreshExpireTime;
+
+    public TokenRespVO(Integer id,String token, Long expireTime, String refreshToken, Long refreshExpireTime){
+        this.id = id;
+        this.refreshToken = refreshToken;
+        this.token = token;
+        this.expireTime = expireTime;
+        this.refreshExpireTime = refreshExpireTime;
+    };
+
 }

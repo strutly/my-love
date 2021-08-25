@@ -1,6 +1,9 @@
 package com.love.strutly.vo.req;
 
+import com.google.common.collect.Lists;
 import lombok.Data;
+
+import java.util.List;
 
 /**
  * @Author lj
@@ -9,8 +12,9 @@ import lombok.Data;
  */
 @Data
 public class PageVO {
-    private Integer pageNo = 0;
+    private Integer pageNo = 1;
     private Integer pageSize = 6;
     private Integer uid;
-    private Boolean open=false;
+    private Boolean mine=false;
+    private List<Integer> ids = Lists.newArrayList();
 }

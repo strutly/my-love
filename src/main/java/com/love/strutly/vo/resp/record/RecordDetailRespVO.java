@@ -2,6 +2,7 @@ package com.love.strutly.vo.resp.record;
 
 import com.love.strutly.entity.Comment;
 import com.love.strutly.entity.MiniUser;
+import com.love.strutly.entity.Record;
 import lombok.Data;
 
 import java.util.Date;
@@ -21,7 +22,7 @@ public class RecordDetailRespVO {
 
     private Boolean open;
 
-    private List<String> imgs;
+    private List<Record.MediaVO> imgs;
 
     private Date createTime;
 

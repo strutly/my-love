@@ -1,14 +1,15 @@
 package com.love.strutly.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.NotFound;
-import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -22,6 +23,7 @@ import java.util.List;
 @Entity
 @Table(name = "love_record")
 @TypeDef(name = "json", typeClass = JsonStringType.class)
+@JsonIgnoreProperties(value={"hibernateLazyInitializer","handler","fieldHandler"})
 public class Record extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -32,7 +34,17 @@ public class Record extends BaseEntity{
 
     @Type(type = "json")
     @Column(columnDefinition = "json")
-    private List<String> imgs;
+    private List<MediaVO> imgs;
 
     private Boolean open;
+
+    private Boolean status=true;
+
+    @Data
+    public static class MediaVO  implements Serializable {
+        private String url;
+        private Integer type=0;//0img 1video
+        private String cover;//
+    }
+
 }

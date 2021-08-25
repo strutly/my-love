@@ -2,25 +2,32 @@ package com.love.strutly.controller;
 
 import cn.binarywang.wx.miniapp.api.WxMaSecCheckService;
 import cn.binarywang.wx.miniapp.api.WxMaService;
+import com.google.common.collect.Lists;
 import com.love.strutly.aop.annotation.PassToken;
 import com.love.strutly.config.jwt.JwtUtil;
 import com.love.strutly.config.mini.WxMaConfiguration;
 import com.love.strutly.entity.MiniUser;
-import com.love.strutly.service.FansService;
 import com.love.strutly.service.MiniUserService;
 import com.love.strutly.service.RecordService;
 import com.love.strutly.utils.DataResult;
 import com.love.strutly.utils.HttpContextUtils;
+import com.love.strutly.utils.RedisUtil;
 import com.love.strutly.vo.req.PageVO;
 import com.love.strutly.vo.req.RecordAddReqVO;
 import com.love.strutly.vo.resp.record.RecordDetailRespVO;
+import com.love.strutly.vo.resp.user.BlackRespVO;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.validation.Valid;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @Author lj
@@ -40,16 +47,30 @@ public class RecordController {
     private RecordService recordService;
 
     @Autowired
-    private FansService fansService;
-
-    @Autowired
     private JwtUtil jwtUtil;
 
+    @Resource
+    private RedisUtil redisUtil;
 
     @PassToken
     @GetMapping("/record")
     public DataResult list(PageVO vo){
-        return DataResult.success(recordService.page(vo));
+        String token = HttpContextUtils.getToken();
+        List<Integer> ids = Lists.newArrayList();
+        if(StringUtils.isNotBlank(token)){
+            String openid = jwtUtil.getClaim(token,"openid");
+            if(redisUtil.hasKey("black"+openid)){
+                List<BlackRespVO> vos = Lists.newArrayList();
+                vos = (List<BlackRespVO>) redisUtil.getList("black"+openid,BlackRespVO.class);
+                vos = vos.stream().filter(v -> v.getTimestamp() > new Date().getTime())
+                        .collect(Collectors.toList());
+                redisUtil.setList("black"+openid, vos,-1);
+                ids = vos.stream().map(BlackRespVO::getId).collect(Collectors.toList());
+            }
+            vo.setIds(ids);
+        }
+
+        return DataResult.success(recordService.list(vo));
     }
 
     @GetMapping("/record/my")
@@ -57,13 +78,10 @@ public class RecordController {
         String token = HttpContextUtils.getToken();
         MiniUser miniUser = miniUserService.findByOpenId(jwtUtil.getClaim(token,"openid"));
         if(miniUser.getId().equals(vo.getUid())){
-            vo.setOpen(true);
-        }else{
-            vo.setOpen(fansService.fans(miniUser.getId(),vo.getUid()));
+            vo.setMine(true);
         }
-        return DataResult.success(recordService.myList(vo));
+        return DataResult.success(recordService.list(vo));
     }
-
 
     @PassToken
     @GetMapping("/record/{id}")

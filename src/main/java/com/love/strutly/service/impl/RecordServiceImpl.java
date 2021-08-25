@@ -1,8 +1,9 @@
 package com.love.strutly.service.impl;
 
-import com.google.common.collect.Lists;
 import com.love.strutly.entity.Comment;
+import com.love.strutly.entity.MiniUser;
 import com.love.strutly.entity.Record;
+import com.love.strutly.exception.code.BaseExceptionType;
 import com.love.strutly.filter.SensitiveFilter;
 import com.love.strutly.repository.CommentRepository;
 import com.love.strutly.repository.RecordRepository;
@@ -13,13 +14,19 @@ import com.love.strutly.utils.RedisUtil;
 import com.love.strutly.vo.req.PageVO;
 import com.love.strutly.vo.req.RecordAddReqVO;
 import com.love.strutly.vo.resp.record.RecordDetailRespVO;
-import com.love.strutly.vo.resp.record.RecordListRespVO;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.Comparator;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -50,17 +57,9 @@ public class RecordServiceImpl implements RecordService {
         if(StringUtils.isNotBlank(vo.getMsg())){
             vo.setMsg(sensitiveFilter.filter(vo.getMsg()));
         }
-        record = recordRepository.save(record);
-
-        if(record.getOpen()){
-            List<Record> records = Lists.newArrayList();
-            if(redisUtil.hasKey("open-record")){
-                records = (List<Record>) redisUtil.getList("open-record",Record.class);
-                records.add(0,record);
-                redisUtil.setList("open-record", records,5*60);
-            }
-        }
+        recordRepository.save(record);
     }
+
 
     @Override
     public RecordDetailRespVO getOne(Integer id) {
@@ -75,55 +74,61 @@ public class RecordServiceImpl implements RecordService {
         return null;
     }
 
-    @Override
-    public List<RecordListRespVO> page(PageVO vo) {
-        List<Record> records = Lists.newArrayList();
-        if(redisUtil.hasKey("open-record")){
-            records = (List<Record>) redisUtil.getList("open-record",Record.class);
-        }else{
-            records = recordRepository.findByOpenIsTrueOrderByCreateTimeDesc();
-            if(records!=null && records.size()>0)
-                redisUtil.setList("open-record", records,5*60);
-        }
-        List<Record> s = records.stream().skip((vo.getPageNo())* vo.getPageSize()).limit(vo.getPageSize()).collect(Collectors.toList());
-        return BeanMapper.mapList(s,RecordListRespVO.class);
-    }
+    /*@Override
+    public void saveAll() {
+        List<Record> records = recordRepository.findAll();
+        records.forEach(record -> {
+            List<Record.MediaVO> vos = Lists.newArrayList();
+            List<String> imgs = record.getImgs();
+            for (int i = 0; i <imgs.size() ; i++) {
+                Record.MediaVO mediaVO = new Record.MediaVO();
+                mediaVO.setCover(imgs.get(i));
+                mediaVO.setType(0);
+                mediaVO.setUrl(imgs.get(i));
+                vos.add(mediaVO);
+            }
+            record.setImgs1(vos);
+            recordRepository.save(record);
+        });
+    }*/
 
     @Override
-    public List<RecordListRespVO> myList(PageVO vo) {
-        List<Record> records = Lists.newArrayList();
-        if(vo.getOpen()){
-            records = recordRepository.findByMiniUser_IdOrderByCreateTimeDesc(vo.getUid());
-        }else{
-            records = recordRepository.findByMiniUser_IdAndOpenOrderByCreateTimeDesc(vo.getUid(),vo.getOpen());
-        }
-        List<Record> s = records.stream().skip((vo.getPageNo())* vo.getPageSize()).limit(vo.getPageSize()).collect(Collectors.toList());
-        return BeanMapper.mapList(s,RecordListRespVO.class);
+    public Page<Record> list(PageVO vo) {
+        Pageable pageable = PageRequest.of(vo.getPageNo()-1, vo.getPageSize(), Sort.Direction.DESC,"id");
+        return recordRepository.findAll((root, criteriaQuery, criteriaBuilder) -> {
+            //查询and
+            List<Predicate> listAnd = new ArrayList<Predicate>();
+            Join<Object, MiniUser> miniUser = root.join("miniUser", JoinType.LEFT);
+            /**
+             * 不是自己时,只显示开放和审核通过的
+             */
+            if(vo.getUid()!=null){
+                listAnd.add(criteriaBuilder.equal(miniUser.get("id"),vo.getUid()));
+            }
+
+
+            if (!vo.getMine()){
+                listAnd.add(criteriaBuilder.equal(root.get("open"),true));
+                listAnd.add(criteriaBuilder.equal(root.get("status"),true));
+            }
+            /**
+             * 黑名单的暂时过滤
+             */
+            if(!vo.getIds().isEmpty()){
+                listAnd.add(criteriaBuilder.not(criteriaBuilder.in(miniUser.get("id")).value(vo.getIds())));
+            }
+            return criteriaQuery.where(listAnd.toArray(new Predicate[listAnd.size()])).getRestriction();
+        },pageable);
     }
 
     @Override
     public DataResult open(Integer id,Integer uid) {
         Record record = recordRepository.getOne(id);
         if(record!=null && !record.getMiniUser().getId().equals(uid)){
-            return DataResult.fail("您没有权限进行此操作!");
+            return DataResult.getResult(BaseExceptionType.USER_ERROR.getCode(),"您没有权限进行此操作!");
         }
         record.setOpen(!record.getOpen());
         recordRepository.save(record);
-        List<Record> records = Lists.newArrayList();
-        if(redisUtil.hasKey("open-record")){
-            records = (List<Record>) redisUtil.getList("open-record",Record.class);
-            if(record.getOpen()){
-                records.add(0,record);
-            }else{
-                records.removeIf(s -> s.getId().equals(record.getId()));
-            }
-
-            records = records.stream()
-                    .sorted(Comparator.comparing(Record::getCreateTime).reversed())
-                    .collect(Collectors.toList());
-
-            redisUtil.setList("open-record", records,5*60);
-        }
         return DataResult.success();
     }
 
@@ -134,6 +139,6 @@ public class RecordServiceImpl implements RecordService {
             recordRepository.deleteById(id);
             return DataResult.success();
         }
-        return DataResult.fail("您没有权限进行此操作!");
+        return DataResult.getResult(BaseExceptionType.USER_ERROR.getCode(),"您没有权限进行此操作!");
     }
 }

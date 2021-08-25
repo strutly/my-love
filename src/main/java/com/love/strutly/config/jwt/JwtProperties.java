@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "jwt.token")
 public class JwtProperties {
     //token过期时间
-    Integer tokenExpireTime;
+    Long expireTime;
+    //refreshToken过期时间
+    Long refreshExpireTime;
     //token加密密钥
     String secretKey;
 }

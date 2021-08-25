@@ -43,7 +43,6 @@ public class MiniAuthController {
     @GetMapping("/login")
     @ApiOperation(value = "用户登录接口")
     public DataResult<TokenRespVO> login(String code) {
-        TokenRespVO result = new TokenRespVO();
         if (StringUtils.isBlank(code)) {
             return DataResult.fail("授权信息不全,请重新进行授权!");
         }
@@ -53,9 +52,7 @@ public class MiniAuthController {
             log.info(session.toString());
             MiniUser miniUser = miniUserService.findByOpenId(session.getOpenid());
             if(null != miniUser){
-                String token = jwtUtil.getToken(miniUser);
-                result.setId(miniUser.getId());
-                result.setToken(token);
+                return DataResult.success(jwtUtil.getToken(miniUser));
             }else{
                 return DataResult.fail("登录失败!");
             }
@@ -63,8 +60,29 @@ public class MiniAuthController {
             log.error(e.getMessage(), e);
             return DataResult.fail("登录失败!");
         }
-        return DataResult.success(result);
     }
+
+    /**
+     * 重新获取token
+     * @param refreshToken
+     * @return
+     */
+    @GetMapping("/refresh")
+    @ApiOperation(value = "刷新用户token")
+    public DataResult refresh(@RequestParam("refreshToken") String refreshToken){
+        // 执行认证
+        if (refreshToken == null) {
+            return DataResult.fail("获取失败!");
+        }
+        // 获取 token 中的 user id
+        if(!jwtUtil.verify(refreshToken)){
+            return DataResult.fail("token 认证失败!");
+        }
+        String openid = jwtUtil.getClaim(refreshToken,"openid");
+        MiniUser miniUser = miniUserService.findByOpenId(openid);
+        return DataResult.success(jwtUtil.getToken(miniUser));
+    }
+
 
     /**
      * 授权 获取身份信息
@@ -75,31 +93,29 @@ public class MiniAuthController {
     @ApiOperation(value = "用户授权接口")
     public DataResult<TokenRespVO> sign(@RequestBody WxLoginReqVO wxLoginVo) throws JsonProcessingException {
         final WxMaService wxService = WxMaConfiguration.getMaService();
-        TokenRespVO result = new TokenRespVO();
         log.info("登录信息为:{}",wxLoginVo);
         String code = wxLoginVo.getCode();
         if(StringUtils.isBlank(code)){
-            return DataResult.fail("授权信息不全,请重新进行授权");
+            return DataResult.unAuth("授权信息不全,请重新进行授权");
         }
         try {
             WxMaJscode2SessionResult session = wxService.getUserService().getSessionInfo(code);
 
             if (!wxService.getUserService().checkUserInfo(session.getSessionKey(), wxLoginVo.getRawData(), wxLoginVo.getSignature())) {
-                return DataResult.fail("user check failed");
+                return DataResult.unAuth("user check failed");
             }
             WxMaUserInfo userInfo = wxService.getUserService().getUserInfo(session.getSessionKey(), wxLoginVo.getEncryptedData(), wxLoginVo.getIv());
+            userInfo.setUnionId(session.getUnionid());
+            userInfo.setOpenId(session.getOpenid());
             MiniUser miniUser = miniUserService.save(userInfo);
             if(null != miniUser){
-                String token = jwtUtil.getToken(miniUser);
-                result.setId(miniUser.getId());
-                result.setToken(token);
+                return DataResult.success(jwtUtil.getToken(miniUser));
             }else{
-                return DataResult.fail("登录失败!");
+                return DataResult.unAuth("登录失败!");
             }
         }catch (WxErrorException e) {
-            return DataResult.fail("授权失败,请稍后再试!");
+            return DataResult.unAuth("授权失败,请稍后再试!");
         }
-        return DataResult.success(result);
     }
 
     /**

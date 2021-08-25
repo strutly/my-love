@@ -36,7 +36,6 @@ public class FansController {
 
     @PostMapping("fans")
     public DataResult form(@RequestBody @Valid FollowReqVO vo){
-        System.out.println(vo);
         String token = HttpContextUtils.getToken();
         MiniUser miniUser = miniUserService.findByOpenId(jwtUtil.getClaim(token,"openid"));
         vo.setUid(miniUser.getId());

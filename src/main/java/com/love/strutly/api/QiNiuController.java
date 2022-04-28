@@ -81,7 +81,7 @@ public class QiNiuController {
         DataResult<FileRespVO> vo = uploadQNFile(inputStream, fileName);
         if(vo.getCode()==0){
             try {
-                if(wxMaSecCheckService.checkImage(vo.getData().getSrc())){
+                if(wxMaSecCheckService.checkImage(vo.getData().getSrc()+"?imageMogr2")){
                     return vo;
                 }else{
                     return DataResult.fail("图片内容含有违法违规内容");

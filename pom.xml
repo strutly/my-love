@@ -11,7 +11,7 @@
     <groupId>com.love</groupId>
     <artifactId>strutly</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>strutly</name>
+    <name>mylove</name>
     <description>mylove</description>
 
     <properties>
@@ -185,7 +185,7 @@
     </dependencies>
 
     <build>
-        <finalName>strutly</finalName>
+        <finalName>${project.name}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
